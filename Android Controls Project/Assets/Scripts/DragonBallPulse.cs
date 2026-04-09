@@ -5,8 +5,12 @@ public class DragonBallPulse : MonoBehaviour
     [Header("Pulse Settings")]
     public float pulseCycleDuration = 2f;
     public float pulseScaleAmount = 0.2f;
-    public float minBrightness = 0.6f;
-    public float maxBrightness = 1.0f;
+
+    [Header("Sound")]
+    public bool playPulseSound = true;
+    // Small window around the peak where the sound fires (prevents double-firing)
+    private float soundTriggerThreshold = 0.1f;
+    private bool soundPlayedThisCycle = false;
 
     private Vector3 baseScale;
     private SpriteRenderer sr;
@@ -21,17 +25,35 @@ public class DragonBallPulse : MonoBehaviour
 
     void Update()
     {
-        // Smooth sine wave 0-1 over the cycle duration
         float t = (Mathf.Sin(Time.time * (2f * Mathf.PI / pulseCycleDuration)) + 1f) / 2f;
 
         // Scale
         transform.localScale = baseScale * (1f + t * pulseScaleAmount);
 
-        // Brightness
+        // Alpha fade — invisible at bottom, visible at peak
         if (sr != null)
         {
-            float b = Mathf.Lerp(minBrightness, maxBrightness, t);
-            sr.color = new Color(baseColor.r * b, baseColor.g * b, baseColor.b * b, baseColor.a);
+            sr.color = new Color(
+                baseColor.r,
+                baseColor.g,
+                baseColor.b,
+                Mathf.Pow(t, 0.4f)
+            );
+        }
+
+        // Play pulse sound once when t crosses the peak threshold
+        if (playPulseSound && AudioManager.Instance != null)
+        {
+            if (t >= soundTriggerThreshold && !soundPlayedThisCycle)
+            {
+                AudioManager.Instance.PlayPulse();
+                soundPlayedThisCycle = true;
+            }
+            else if (t < soundTriggerThreshold)
+            {
+                // Reset so it can fire again next cycle
+                soundPlayedThisCycle = false;
+            }
         }
     }
 }

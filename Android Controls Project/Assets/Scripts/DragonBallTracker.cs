@@ -19,6 +19,8 @@ public class DragonBallTracker : MonoBehaviour
     private float holdTimer = 0f;
     private bool isHolding = false;
     private bool panelOpen = false;
+    private float touchSoundCooldown = 0f;
+    private float touchSoundCooldownDuration = 0.5f;
 
     void Start()
     {
@@ -29,6 +31,9 @@ public class DragonBallTracker : MonoBehaviour
     void Update()
     {
         if (panelOpen) return;
+
+        if (touchSoundCooldown > 0f)
+            touchSoundCooldown -= Time.deltaTime;
 
         var ts = Touchscreen.current;
         if (ts == null) return;
@@ -89,6 +94,11 @@ public class DragonBallTracker : MonoBehaviour
 
             if (progressUI != null)
                 progressUI.Show(new Vector3(screenPos.x, screenPos.y + 160f, 0));
+
+            // Play touch sound when finger first contacts a dragon ball
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayTouch();
+                touchSoundCooldown = touchSoundCooldownDuration;
         }
     }
 
@@ -101,7 +111,12 @@ public class DragonBallTracker : MonoBehaviour
 
         if (infoTitleText != null) infoTitleText.text = data.GetDisplayName();
         if (infoBodyText != null) infoBodyText.text = data.currentStatus;
-        if (infoPanel != null) infoPanel.SetActive(true);
+        if (infoPanel != null)
+        {
+            infoPanel.SetActive(true);
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayMessageOpen();
+        }
 
         if (gameManager != null) gameManager.DragonBallFound(currentTarget.GetInstanceID());
 
@@ -111,8 +126,13 @@ public class DragonBallTracker : MonoBehaviour
 
     public void CloseInfoPanel()
     {
-        if (infoPanel != null) infoPanel.SetActive(false);
+        if (infoPanel != null)
+            infoPanel.SetActive(false);
+
         panelOpen = false;
+
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayMessageClose();
     }
 
     void CancelHold()
