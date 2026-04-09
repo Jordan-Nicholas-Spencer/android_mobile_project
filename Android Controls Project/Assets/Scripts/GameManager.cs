@@ -1,41 +1,38 @@
 using UnityEngine;
 using TMPro;
+using System.Collections.Generic;
 
-// GameManager tracks the score and handles the win condition
 public class GameManager : MonoBehaviour
 {
-    // Drag these in from the Inspector
+    [Header("UI")]
     public TextMeshProUGUI scoreText;
-    public GameObject winPanel;
 
-    private int score = 0;
-    private int totalDragonBalls = 7;
+    private HashSet<int> foundBallIds = new HashSet<int>();
+    private int total = 7;
 
-    // This is called by DragonBallCollector when a DragonBall is collected
-    public void DragonBallCollected()
+    // Called when a ball is viewed. instanceID uniquely identifies each GameObject.
+    public void DragonBallFound(int instanceID)
     {
-        score++;
-        UpdateScoreUI();
-
-        if (score >= totalDragonBalls)
+        if (!foundBallIds.Contains(instanceID))
         {
-            ShowWin();
+            foundBallIds.Add(instanceID);
+        }
+        UpdateUI();
+    }
+
+    // Called when a ball moves — removes it from the found set
+    public void DragonBallLost(int instanceID)
+    {
+        if (foundBallIds.Contains(instanceID))
+        {
+            foundBallIds.Remove(instanceID);
+            UpdateUI();
         }
     }
 
-    void UpdateScoreUI()
+    void UpdateUI()
     {
         if (scoreText != null)
-        {
-            scoreText.text = "Score: " + score;
-        }
-    }
-
-    void ShowWin()
-    {
-        if (winPanel != null)
-        {
-            winPanel.SetActive(true);
-        }
+            scoreText.text = "Balls Found: " + foundBallIds.Count + " / " + total;
     }
 }
